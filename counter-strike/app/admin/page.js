@@ -5,342 +5,424 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   User2,
-  Plus,
-  Power,
-  UserCheck,
-  Hash,
-  Trash2,
+  Loader2,
   AlertCircle,
+  Plus,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Settings,
+  Users,
+  Bell
 } from "lucide-react";
 
-export default function Admin() {
+export default function AdminPage() {
   const [cashiers, setCashiers] = useState([]);
   const [newCashierName, setNewCashierName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [newCashierType, setNewCashierType] = useState("regular");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isToggling, setIsToggling] = useState({});
+  const [isRemoving, setIsRemoving] = useState({});
   const [successMessage, setSuccessMessage] = useState(null);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchCashiers();
-  }, []);
+  const [rangeSize, setRangeSize] = useState(5);
+  const [priorityRangeSize, setPriorityRangeSize] = useState(5);
+  const [newRangeSize, setNewRangeSize] = useState("");
+  const [newPriorityRangeSize, setNewPriorityRangeSize] = useState("");
+  const [isSettingRange, setIsSettingRange] = useState(false);
+  const [isSettingPriorityRange, setIsSettingPriorityRange] = useState(false);
+  const [rangeMessage, setRangeMessage] = useState(null);
+  const [priorityRangeMessage, setPriorityRangeMessage] = useState(null);
 
-  const fetchCashiers = async () => {
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
       const res = await fetch("/api/queue");
       const data = await res.json();
-      setCashiers(data.cashiers);
-      setError(null);
-    } catch (err) {
-      setError("Failed to load cashiers");
-      console.error(err);
+      setCashiers(data.cashiers || []);
+      setRangeSize(data.rangeSize || 5);
+      setPriorityRangeSize(data.priorityRangeSize || 5);
+    } catch {
+      setError("Failed to load data");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const addCashier = async () => {
-    if (!newCashierName) return;
-    setIsLoading(true);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleAddCashier = async () => {
+    if (!newCashierName.trim()) return;
+    setIsAdding(true);
     setError(null);
     try {
-      await fetch("/api/queue", {
+      const res = await fetch("/api/queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "addCashier", name: newCashierName }),
+        body: JSON.stringify({
+          action: "addCashier",
+          name: newCashierName,
+          type: newCashierType,
+        }),
       });
+      if (!res.ok) throw new Error();
+      setSuccessMessage(`Cashier "${newCashierName}" added!`);
       setNewCashierName("");
-      setSuccessMessage(`Cashier "${newCashierName}" added successfully`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-      await fetchCashiers();
-    } catch (err) {
-      setError("Failed to add cashier");
-      console.error(err);
+      setNewCashierType("regular");
+      fetchData();
+      setTimeout(() => setSuccessMessage(null), 2000);
+    } catch {
+      setError("Error adding cashier");
     } finally {
-      setIsLoading(false);
+      setIsAdding(false);
     }
   };
 
-  const toggleCashierActive = async (cashierId, currentActiveState, name) => {
-    setIsLoading(true);
+  const handleToggleActive = async (id, isActive) => {
+    setIsToggling((prev) => ({ ...prev, [id]: true }));
     setError(null);
     try {
-      await fetch("/api/queue", {
+      const res = await fetch("/api/queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "toggleActive",
-          cashierId,
-          isActive: !currentActiveState,
-        }),
+        body: JSON.stringify({ action: "toggleActive", cashierId: id, isActive: !isActive }),
       });
-      setSuccessMessage(
-        `Cashier "${name}" ${
-          !currentActiveState ? "activated" : "deactivated"
-        } successfully`
-      );
-      setTimeout(() => setSuccessMessage(null), 3000);
-      await fetchCashiers();
-    } catch (err) {
-      setError("Failed to update cashier status");
-      console.error(err);
+      if (!res.ok) throw new Error();
+      fetchData();
+    } catch {
+      setError("Error toggling cashier");
     } finally {
-      setIsLoading(false);
+      setIsToggling((prev) => ({ ...prev, [id]: false }));
     }
   };
 
-  const removeCashier = async (cashierId, name) => {
-    if (!confirm(`Are you sure you want to remove cashier "${name}"?`)) return;
-
-    setIsLoading(true);
+  const handleRemoveCashier = async (id, name) => {
+    if (!window.confirm(`Remove cashier "${name}"?`)) return;
+    setIsRemoving((prev) => ({ ...prev, [id]: true }));
     setError(null);
     try {
-      await fetch("/api/queue", {
+      const res = await fetch("/api/queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "removeCashier",
-          cashierId,
-        }),
+        body: JSON.stringify({ action: "removeCashier", cashierId: id }),
       });
-      setSuccessMessage(`Cashier "${name}" removed successfully`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-      await fetchCashiers();
-    } catch (err) {
-      setError("Failed to remove cashier");
-      console.error(err);
+      if (!res.ok) throw new Error();
+      fetchData();
+    } catch {
+      setError("Error removing cashier");
     } finally {
-      setIsLoading(false);
+      setIsRemoving((prev) => ({ ...prev, [id]: false }));
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && newCashierName) {
-      addCashier();
+  const handleSetRangeSize = async () => {
+    setIsSettingRange(true);
+    setRangeMessage(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "setRangeSize", rangeSize: Number(newRangeSize) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to set range size");
+      setRangeMessage(`Range size set to ${data.rangeSize}`);
+      setRangeSize(data.rangeSize);
+      setNewRangeSize("");
+      fetchData();
+      setTimeout(() => setRangeMessage(null), 2000);
+    } catch (err) {
+      setRangeMessage(err.message);
+    } finally {
+      setIsSettingRange(false);
     }
   };
+
+  const handleSetPriorityRangeSize = async () => {
+    setIsSettingPriorityRange(true);
+    setPriorityRangeMessage(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "setPriorityRangeSize", priorityRangeSize: Number(newPriorityRangeSize) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to set priority range size");
+      setPriorityRangeMessage(`Priority range size set to ${data.priorityRangeSize}`);
+      setPriorityRangeSize(data.priorityRangeSize);
+      setNewPriorityRangeSize("");
+      fetchData();
+      setTimeout(() => setPriorityRangeMessage(null), 2000);
+    } catch (err) {
+      setPriorityRangeMessage(err.message);
+    } finally {
+      setIsSettingPriorityRange(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Loading admin panel...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 lg:p-8">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-indigo-900 mb-2">
-            Queue Management System
-          </h1>
-          <p className="text-indigo-700">
-            Streamline your customer service operations
-          </p>
-        </header>
-
-        <Card className="shadow-2xl border-0 overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-indigo-600 to-blue-600 py-6 px-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white">
-                  Admin Dashboard
-                </h2>
-                <p className="text-indigo-100 mt-1">
-                  Manage cashiers and monitor queue status
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-indigo-100 text-sm">System Online</span>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6 md:p-10">
+      <Card className="max-w-6xl mx-auto shadow-xl border border-gray-100 rounded-3xl overflow-hidden">
+        {/* Header with blue gradient background */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Settings className="w-8 h-8 animate-pulse" />
+              <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
             </div>
-          </CardHeader>
+            <div className="bg-white/20 py-1 px-3 rounded-full text-sm font-medium backdrop-blur-sm">
+              Queue Management System
+            </div>
+          </div>
+        </div>
 
-          <CardContent className="p-0">
-            {/* Notification Area */}
-            {(error || successMessage) && (
-              <div
-                className={`px-6 py-3 ${
-                  error
-                    ? "bg-red-50 text-red-700"
-                    : "bg-green-50 text-green-700"
-                } flex items-center`}
-              >
-                {error ? (
-                  <AlertCircle className="w-5 h-5 mr-2 text-red-500" />
-                ) : (
-                  <div className="w-5 h-5 mr-2 rounded-full bg-green-500 flex items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-3 w-3 text-white"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                )}
-                <span>{error || successMessage}</span>
+        <CardHeader className="bg-white px-8 py-6 border-b border-gray-100">
+          {/* Notifications */}
+          <div className="mb-6">
+            {successMessage && (
+              <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 text-green-700 text-sm flex items-center gap-2 shadow-sm">
+                <Bell className="w-5 h-5" />
+                <span>{successMessage}</span>
               </div>
             )}
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 text-red-700 text-sm flex items-center gap-2 shadow-sm">
+                <AlertCircle className="w-5 h-5" />
+                <span>{error}</span>
+              </div>
+            )}
+          </div>
 
-            {/* Add Cashier Section */}
-            <div className="p-6 lg:p-8 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Add New Cashier
-              </h3>
-              <div className="flex gap-4 items-center">
-                <div className="relative flex-1">
-                  <Input
-                    value={newCashierName}
-                    onChange={(e) => setNewCashierName(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Enter cashier name"
-                    className="pl-10 h-12 text-base bg-white border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    disabled={isLoading}
+          {/* Settings Section */}
+          <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-blue-600" />
+              Queue Settings
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Range Setters */}
+              <div className="space-y-3 bg-white p-4 rounded-xl shadow-sm">
+                <h3 className="font-medium text-gray-700 mb-2">Regular Queue Range</h3>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="number" 
+                    min={1} 
+                    className="w-24" 
+                    value={newRangeSize} 
+                    onChange={(e) => setNewRangeSize(e.target.value)} 
+                    disabled={isSettingRange}
+                    placeholder="New size" 
                   />
-                  <User2 className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                  <Button 
+                    onClick={handleSetRangeSize} 
+                    disabled={isSettingRange || !newRangeSize}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {isSettingRange ? "Setting..." : "Update"}
+                  </Button>
                 </div>
-                <Button
-                  onClick={addCashier}
-                  disabled={isLoading || !newCashierName}
-                  className="h-12 px-6 bg-indigo-600 hover:bg-indigo-700 text-white"
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-gray-600">
+                    Current: <span className="font-bold text-blue-700">{rangeSize}</span>
+                  </div>
+                  {rangeMessage && (
+                    <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                      {rangeMessage}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-white p-4 rounded-xl shadow-sm">
+                <h3 className="font-medium text-gray-700 mb-2">Priority Queue Range</h3>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="number" 
+                    min={1} 
+                    className="w-24" 
+                    value={newPriorityRangeSize} 
+                    onChange={(e) => setNewPriorityRangeSize(e.target.value)} 
+                    disabled={isSettingPriorityRange}
+                    placeholder="New size" 
+                  />
+                  <Button 
+                    onClick={handleSetPriorityRangeSize} 
+                    disabled={isSettingPriorityRange || !newPriorityRangeSize}
+                    className="bg-amber-600 hover:bg-amber-700"
+                  >
+                    {isSettingPriorityRange ? "Setting..." : "Update"}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-gray-600">
+                    Current: <span className="font-bold text-amber-700">{priorityRangeSize}</span>
+                  </div>
+                  {priorityRangeMessage && (
+                    <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                      {priorityRangeMessage}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Add Cashier Section */}
+          <div className="bg-gray-50 rounded-2xl p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              Add New Cashier
+            </h2>
+            
+            <div className="flex flex-wrap justify-center items-center gap-3">
+              <Input 
+                placeholder="Cashier name" 
+                value={newCashierName} 
+                onChange={(e) => setNewCashierName(e.target.value)} 
+                className="w-64 shadow-sm" 
+                disabled={isAdding}
+              />
+              <select 
+                value={newCashierType} 
+                onChange={(e) => setNewCashierType(e.target.value)} 
+                className="border rounded-lg px-4 py-2 bg-white shadow-sm text-gray-700" 
+                disabled={isAdding}
+              >
+                <option value="regular">Regular</option>
+                <option value="priority">Priority</option>
+              </select>
+              <Button 
+                onClick={handleAddCashier} 
+                disabled={isAdding || !newCashierName.trim()} 
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 shadow-md"
+              >
+                <Plus className="w-5 h-5 mr-1" />
+                {isAdding ? "Adding..." : "Add Cashier"}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-8 bg-white">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <Users className="w-6 h-6 text-blue-600" />
+            Cashier Management
+            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full ml-2">
+              {cashiers.length} Total
+            </span>
+          </h2>
+          
+          {cashiers.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <User2 className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <p>No cashiers available. Add your first cashier to get started.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {cashiers.map((cashier) => (
+                <div 
+                  key={cashier.id} 
+                  className={`relative bg-white rounded-xl p-6 border transition-all duration-300 
+                    ${cashier.isActive 
+                      ? "border-l-4 border-l-green-500 border-gray-100 shadow-md hover:shadow-lg" 
+                      : "border-l-4 border-l-red-400 border-gray-100 shadow-sm opacity-75"}`}
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Cashier
-                </Button>
-              </div>
-            </div>
-
-            {/* Cashiers List */}
-            <div className="p-6 lg:p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Active Cashiers
-                </h3>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                  {cashiers.length} Total
-                </span>
-              </div>
-
-              {cashiers.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  <UserCheck className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <h4 className="text-lg font-medium text-gray-600 mb-1">
-                    No Cashiers Available
-                  </h4>
-                  <p className="text-gray-500">
-                    Add your first cashier to get started
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {cashiers.map((cashier) => (
-                    <Card
-                      key={cashier.id}
-                      className={`overflow-hidden transition-all duration-200 hover:shadow-md ${
-                        cashier.isActive
-                          ? "border-l-4 border-l-green-500"
-                          : "border-l-4 border-l-gray-300"
-                      }`}
-                    >
-                      <div className="p-5">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center">
-                            <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
-                                cashier.isActive
-                                  ? "bg-green-100"
-                                  : "bg-gray-100"
-                              }`}
-                            >
-                              <UserCheck
-                                className={`w-5 h-5 ${
-                                  cashier.isActive
-                                    ? "text-green-600"
-                                    : "text-gray-600"
-                                }`}
-                              />
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-gray-900">
-                                {cashier.name}
-                              </h4>
-                              <p className="text-xs text-gray-500">
-                                ID: {cashier.id}
-                              </p>
-                            </div>
-                          </div>
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              cashier.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {cashier.isActive ? "Active" : "Inactive"}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 py-3 border-t border-gray-100">
-                          <div className="flex items-center mb-4">
-                            <Hash className="w-5 h-5 text-blue-600 mr-2" />
-                            <div>
-                              <p className="text-xs text-gray-500">
-                                Current Number
-                              </p>
-                              <p className="text-2xl font-bold text-indigo-600">
-                                {cashier.currentNumber}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              className={`flex-1 justify-center ${
-                                cashier.isActive
-                                  ? "border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700"
-                                  : "border-green-200 bg-green-50 hover:bg-green-100 text-green-700"
-                              }`}
-                              onClick={() =>
-                                toggleCashierActive(
-                                  cashier.id,
-                                  cashier.isActive,
-                                  cashier.name
-                                )
-                              }
-                              disabled={isLoading}
-                            >
-                              <Power className="w-4 h-4 mr-2" />
-                              {cashier.isActive ? "Deactivate" : "Activate"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="border-red-200 bg-red-50 hover:bg-red-100 text-red-700"
-                              onClick={() =>
-                                removeCashier(cashier.id, cashier.name)
-                              }
-                              disabled={isLoading}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
+                  {cashier.type === "priority" && (
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full uppercase font-bold tracking-wide">
+                        Priority
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`p-3 rounded-full ${cashier.isActive 
+                      ? cashier.type === "priority" ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600" 
+                      : "bg-gray-100 text-gray-400"}`}>
+                      <User2 className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold text-gray-800">
+                        {cashier.name}
                       </div>
-                    </Card>
-                  ))}
+                      <div className={`flex items-center mt-1 text-sm ${cashier.isActive ? "text-green-600" : "text-red-500"}`}>
+                        {cashier.isActive ? (
+                          <ToggleRight className="w-4 h-4 mr-1" />
+                        ) : (
+                          <ToggleLeft className="w-4 h-4 mr-1" />
+                        )}
+                        {cashier.isActive ? "Active" : "Inactive"}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg mb-4">
+                    <div className="text-sm text-gray-600">Current number</div>
+                    <div className="text-xl font-bold text-gray-800">
+                      {cashier.type === "priority" ? "P-" : ""}
+                      {cashier.currentNumber}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Range: {cashier.rangeStart}-{cashier.rangeEnd}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleToggleActive(cashier.id, cashier.isActive)} 
+                      disabled={isToggling[cashier.id]}
+                      className={`flex-1 ${cashier.isActive 
+                        ? "border-red-200 text-red-600 hover:bg-red-50" 
+                        : "border-green-200 text-green-600 hover:bg-green-50"}`}
+                    >
+                      {cashier.isActive ? (
+                        <>
+                          <ToggleLeft className="w-4 h-4 mr-1" /> Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <ToggleRight className="w-4 h-4 mr-1" /> Activate
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => handleRemoveCashier(cashier.id, cashier.name)} 
+                      disabled={isRemoving[cashier.id]}
+                      className="bg-white border border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
-          </CardContent>
-        </Card>
-
-        <footer className="mt-8 text-center text-gray-600 text-sm">
-          <p>
-            © {new Date().getFullYear()} Queue Management System. All rights
-            reserved.
-          </p>
-        </footer>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

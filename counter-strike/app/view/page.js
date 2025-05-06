@@ -6,27 +6,46 @@ import { User2, Volume2, VolumeX } from "lucide-react";
 export default function ViewPage() {
   const [queueData, setQueueData] = useState({ cashiers: [] });
   const [animatingIds, setAnimatingIds] = useState(new Set());
-  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   const previousNumbersRef = useRef({});
   const audioPoolRef = useRef([]);
   const audioPoolSize = 5;
   const speechSynthRef = useRef(null);
 
-  useEffect(() => {
-    // Initialize speech synthesis
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      speechSynthRef.current = window.speechSynthesis;
+  const initializeAudioAndSpeech = () => {
+    if (!audioPoolRef.current.length) {
+      // Initialize notification sound pool
+      audioPoolRef.current = Array(audioPoolSize)
+        .fill()
+        .map(() => {
+          const audio = new Audio("/notif.mp3");
+          audio.volume = 1;
+          return audio;
+        });
     }
 
-    // Initialize notification sound pool
-    audioPoolRef.current = Array(audioPoolSize)
-      .fill()
-      .map(() => {
-        const audio = new Audio("/notif.mp3");
-        audio.volume = 1;
-        return audio;
-      });
+    if (!speechSynthRef.current && typeof window !== 'undefined' && window.speechSynthesis) {
+      // Initialize speech synthesis
+      speechSynthRef.current = window.speechSynthesis;
 
+      // Load voices
+      const loadVoices = () => {
+        const voices = speechSynthRef.current.getVoices();
+        if (voices.length === 0) {
+          setTimeout(loadVoices, 100);
+        }
+      };
+      loadVoices();
+      speechSynthRef.current.onvoiceschanged = loadVoices;
+    }
+  };
+
+  const handleUserInteraction = () => {
+    initializeAudioAndSpeech();
+    setAudioEnabled(true);
+  };
+
+  useEffect(() => {
     queueData.cashiers.forEach((cashier) => {
       previousNumbersRef.current[cashier.id] = cashier.currentNumber;
     });
@@ -53,8 +72,8 @@ export default function ViewPage() {
               console.error("Error playing sound:", err);
             });
 
-            // Announce the counter number with voice
-            announceCounter(cashier.name, cashier.currentNumber, cashier.rangeEnd);
+            // Announce the counter number with voice (twice)
+            announceCounter(cashier.name, cashier.currentNumber, cashier.rangeEnd, 1);
 
             changeCount++;
           }
@@ -77,12 +96,14 @@ export default function ViewPage() {
     return () => eventSource.close();
   }, [audioEnabled]);
 
-  // Function to announce counter number with voice
-  const announceCounter = (cashierName, currentNumber, rangeEnd) => {
+  // Function to announce counter number with voice - with repetition
+  const announceCounter = (cashierName, currentNumber, rangeEnd, repeatCount = 1) => {
     if (!speechSynthRef.current) return;
     
-    // Cancel any ongoing speech
-    speechSynthRef.current.cancel();
+    // Cancel any ongoing speech if this is the first announcement
+    if (repeatCount === 1) {
+      speechSynthRef.current.cancel();
+    }
     
     // Create the announcement text
     const announcement = `${cashierName} is now serving number ${currentNumber} to ${rangeEnd}`;
@@ -102,68 +123,59 @@ export default function ViewPage() {
     utterance.pitch = 1.1; // Slightly higher pitch
     utterance.volume = 1.0;
     
+    // If this is the first announcement, schedule the second one after this one finishes
+    if (repeatCount === 1) {
+      utterance.onend = () => {
+        // Add a short pause between announcements
+        setTimeout(() => {
+          announceCounter(cashierName, currentNumber, rangeEnd, 2);
+        }, 500);
+      };
+    }
+    
     // Speak the announcement
     speechSynthRef.current.speak(utterance);
   };
 
   const toggleAudio = () => {
     if (!audioEnabled) {
-      // Try to initialize audio
+      // Initialize audio and speech synthesis on user interaction
       const initAudio = audioPoolRef.current[0];
-      initAudio
-        .play()
-        .then(() => {
-          initAudio.pause();
-          initAudio.currentTime = 0;
-          
-          // Also initialize speech synthesis
-          if (speechSynthRef.current) {
-            const testUtterance = new SpeechSynthesisUtterance("");
-            speechSynthRef.current.speak(testUtterance);
-          }
-          
-          setAudioEnabled(true);
-        })
-        .catch((err) => {
-          console.error("Error initializing audio:", err);
-        });
+      initAudio.play().then(() => {
+        initAudio.pause();
+        initAudio.currentTime = 0;
+
+        // Initialize speech synthesis
+        if (speechSynthRef.current) {
+          const testUtterance = new SpeechSynthesisUtterance("");
+          speechSynthRef.current.speak(testUtterance);
+        }
+
+        setAudioEnabled(true);
+      }).catch((err) => {
+        console.error("Error initializing audio:", err);
+      });
     } else {
       // Stop all audio
       audioPoolRef.current.forEach((audio) => {
         audio.pause();
         audio.currentTime = 0;
       });
-      
+
       // Stop any ongoing speech
       if (speechSynthRef.current) {
         speechSynthRef.current.cancel();
       }
-      
+
       setAudioEnabled(false);
     }
   };
 
-  // Load voices when the component mounts
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      // Some browsers need a small delay to load voices
-      const loadVoices = () => {
-        const voices = speechSynthRef.current.getVoices();
-        if (voices.length === 0) {
-          // If voices aren't ready yet, try again in a moment
-          setTimeout(loadVoices, 100);
-        }
-      };
-      
-      loadVoices();
-      
-      // Handle voice changes
-      speechSynthRef.current.onvoiceschanged = loadVoices;
-    }
-  }, []);
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div
+      className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100"
+      onClick={handleUserInteraction} // Trigger initialization on user interaction
+    >
       <div className="p-4 lg:p-8 h-screen flex flex-col">
         <Card className="flex-1 shadow-xl flex flex-col">
           <CardHeader className="border-b bg-white py-6">
@@ -175,22 +187,7 @@ export default function ViewPage() {
               <p className="text-center text-gray-500 text-2xl mr-4">
                 Counter Updates
               </p>
-              <button
-                onClick={toggleAudio}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition"
-              >
-                {audioEnabled ? (
-                  <>
-                    <Volume2 size={20} />
-                    <span>Sound On</span>
-                  </>
-                ) : (
-                  <>
-                    <VolumeX size={20} />
-                    <span>Sound Off</span>
-                  </>
-                )}
-              </button>
+        
             </div>
           </CardHeader>
           <CardContent className="flex-1 p-8 flex items-center">
