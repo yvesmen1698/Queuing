@@ -1,19 +1,18 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { User2, Volume2, VolumeX } from "lucide-react";
+import { User2 } from "lucide-react";
 
 export default function ViewPage() {
   const [queueData, setQueueData] = useState({ cashiers: [] });
   const [animatingIds, setAnimatingIds] = useState(new Set());
-  const [audioEnabled, setAudioEnabled] = useState(true);
   const previousNumbersRef = useRef({});
   const audioPoolRef = useRef([]);
   const audioPoolSize = 5;
   const speechSynthRef = useRef(null);
 
+  // Initialize audio and speech synthesis once
   useEffect(() => {
-    // Initialize speech synthesis
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       speechSynthRef.current = window.speechSynthesis;
     }
@@ -43,21 +42,17 @@ export default function ViewPage() {
           previousNumber !== undefined &&
           cashier.currentNumber !== previousNumber
         ) {
-          if (audioEnabled) {
-            // Play notification sound
-            const audioElement =
-              audioPoolRef.current[changeCount % audioPoolSize];
-            audioElement.currentTime = 0;
+          // Play notification sound
+          const audioElement = audioPoolRef.current[changeCount % audioPoolSize];
+          audioElement.currentTime = 0;
+          audioElement.play().catch((err) => {
+            console.error("Error playing sound:", err);
+          });
 
-            audioElement.play().catch((err) => {
-              console.error("Error playing sound:", err);
-            });
+          // Announce the counter number with voice (twice)
+          announceCounter(cashier.name, cashier.currentNumber, cashier.rangeEnd, 1);
 
-            // Announce the counter number with voice (twice)
-            announceCounter(cashier.name, cashier.currentNumber, cashier.rangeEnd, 1);
-
-            changeCount++;
-          }
+          changeCount++;
 
           setAnimatingIds((prev) => new Set([...prev, cashier.id]));
           setTimeout(() => {
@@ -75,35 +70,36 @@ export default function ViewPage() {
     };
 
     return () => eventSource.close();
-  }, [audioEnabled]);
+    // eslint-disable-next-line
+  }, []);
 
   // Function to announce counter number with voice - with repetition
   const announceCounter = (cashierName, currentNumber, rangeEnd, repeatCount = 1) => {
     if (!speechSynthRef.current) return;
-    
+
     // Cancel any ongoing speech if this is the first announcement
     if (repeatCount === 1) {
       speechSynthRef.current.cancel();
     }
-    
+
     // Create the announcement text
     const announcement = `${cashierName} is now serving number ${currentNumber} to ${rangeEnd}`;
-    
+
     // Create utterance object
     const utterance = new SpeechSynthesisUtterance(announcement);
-    
-    // Set female voice
+
+    // Set female voice if available
     const voices = speechSynthRef.current.getVoices();
     const femaleVoice = voices.find(voice => voice.name.includes('female') || voice.name.includes('Female'));
     if (femaleVoice) {
       utterance.voice = femaleVoice;
     }
-    
+
     // Set other properties
     utterance.rate = 0.9; // Slightly slower than default
     utterance.pitch = 1.1; // Slightly higher pitch
     utterance.volume = 1.0;
-    
+
     // If this is the first announcement, schedule the second one after this one finishes
     if (repeatCount === 1) {
       utterance.onend = () => {
@@ -113,43 +109,9 @@ export default function ViewPage() {
         }, 500);
       };
     }
-    
+
     // Speak the announcement
     speechSynthRef.current.speak(utterance);
-  };
-
-  const toggleAudio = () => {
-    if (!audioEnabled) {
-      // Initialize audio and speech synthesis on user interaction
-      const initAudio = audioPoolRef.current[0];
-      initAudio.play().then(() => {
-        initAudio.pause();
-        initAudio.currentTime = 0;
-
-        // Initialize speech synthesis
-        if (speechSynthRef.current) {
-          const testUtterance = new SpeechSynthesisUtterance("");
-          speechSynthRef.current.speak(testUtterance);
-        }
-
-        setAudioEnabled(true);
-      }).catch((err) => {
-        console.error("Error initializing audio:", err);
-      });
-    } else {
-      // Stop all audio
-      audioPoolRef.current.forEach((audio) => {
-        audio.pause();
-        audio.currentTime = 0;
-      });
-
-      // Stop any ongoing speech
-      if (speechSynthRef.current) {
-        speechSynthRef.current.cancel();
-      }
-
-      setAudioEnabled(false);
-    }
   };
 
   // Load voices when the component mounts
@@ -163,9 +125,9 @@ export default function ViewPage() {
           setTimeout(loadVoices, 100);
         }
       };
-      
+
       loadVoices();
-      
+
       // Handle voice changes
       speechSynthRef.current.onvoiceschanged = loadVoices;
     }
@@ -184,22 +146,7 @@ export default function ViewPage() {
               <p className="text-center text-gray-500 text-2xl mr-4">
                 Counter Updates
               </p>
-              <button
-                onClick={toggleAudio}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition"
-              >
-                {audioEnabled ? (
-                  <>
-                    <Volume2 size={20} />
-                    <span>Sound On</span>
-                  </>
-                ) : (
-                  <>
-                    <VolumeX size={20} />
-                    <span>Sound Off</span>
-                  </>
-                )}
-              </button>
+              {/* Sound toggle button removed */}
             </div>
           </CardHeader>
           <CardContent className="flex-1 p-8 flex items-center">
@@ -263,7 +210,6 @@ export default function ViewPage() {
                               ? `${cashier.currentNumber}-${cashier.rangeEnd}`
                               : "-"}
                           </p>
-                        
                         </div>
                       </div>
                     </div>
