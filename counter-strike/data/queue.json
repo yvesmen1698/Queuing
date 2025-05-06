@@ -1,0 +1,38 @@
+{
+  "cashiers": [
+    {
+      "id": null,
+      "name": "COUNTER 1",
+      "currentNumber": 51,
+      "rangeStart": 51,
+      "rangeEnd": 55,
+      "isActive": true
+    },
+    {
+      "id": 1,
+      "name": "COUNTER 2",
+      "currentNumber": 36,
+      "rangeStart": 36,
+      "rangeEnd": 40,
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "COUNTER 3",
+      "currentNumber": 46,
+      "rangeStart": 46,
+      "rangeEnd": 50,
+      "isActive": false
+    },
+    {
+      "id": 3,
+      "name": "COUNTER 4",
+      "currentNumber": 0,
+      "rangeStart": 71,
+      "rangeEnd": 75,
+      "isActive": false
+    }
+  ],
+  "currentTicket": 55,
+  "lastResetDate": "Tue May 06 2025"
+}
