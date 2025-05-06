@@ -198,7 +198,7 @@ export default function ViewPage() {
                   if (!cashier || !cashier.isActive) {
                     return (
                       <div
-                        key={index}
+                        key={`inactive-${index}`} // Updated key to include a unique prefix
                         className="relative overflow-hidden rounded-xl bg-white border border-gray-100 p-8 shadow-lg transition-all duration-300"
                       >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-red-500 rotate-45 transform translate-x-12 -translate-y-12" />
@@ -222,7 +222,7 @@ export default function ViewPage() {
                   }
                   return (
                     <div
-                      key={cashier.id}
+                      key={cashier.id} // Updated key to use cashier.id for uniqueness
                       className="relative overflow-hidden rounded-xl bg-white border border-gray-100 p-8 shadow-lg transition-all duration-300"
                     >
                       <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 rotate-45 transform translate-x-12 -translate-y-12" />

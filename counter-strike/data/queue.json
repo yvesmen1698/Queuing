@@ -3,17 +3,17 @@
     {
       "id": 1,
       "name": "COUNTER 1",
-      "currentNumber": 4,
-      "rangeStart": 4,
-      "rangeEnd": 6,
+      "currentNumber": 0,
+      "rangeStart": 0,
+      "rangeEnd": 0,
       "isActive": true
     },
     {
       "id": 2,
       "name": "COUNTER 2",
-      "currentNumber": 1,
-      "rangeStart": 1,
-      "rangeEnd": 3,
+      "currentNumber": 0,
+      "rangeStart": 0,
+      "rangeEnd": 0,
       "isActive": true
     },
     {
@@ -25,18 +25,36 @@
       "isActive": true
     },
     {
-      "id": 4,
-      "name": "Senior Citizen",
+      "id": 5,
+      "name": "COUNTER 4",
+      "type": "regular",
+      "currentNumber": 0,
+      "rangeStart": 0,
+      "rangeEnd": 0,
+      "isActive": true
+    },
+    {
+      "id": 6,
+      "name": "COUNTER 5",
+      "type": "regular",
+      "currentNumber": 0,
+      "rangeStart": 0,
+      "rangeEnd": 0,
+      "isActive": true
+    },
+    {
+      "id": 7,
+      "name": "PRIORITY COUNTER",
       "type": "priority",
-      "currentNumber": 7,
-      "rangeStart": 7,
-      "rangeEnd": 9,
+      "currentNumber": 0,
+      "rangeStart": 0,
+      "rangeEnd": 0,
       "isActive": true
     }
   ],
-  "currentTicket": 6,
+  "currentTicket": 0,
   "lastResetDate": "Tue May 06 2025",
   "rangeSize": 3,
   "priorityRangeSize": 3,
-  "priorityCurrentTicket": 9
+  "priorityCurrentTicket": 0
 }
