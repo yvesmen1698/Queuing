@@ -3,9 +3,9 @@
     {
       "id": 1,
       "name": "COUNTER 1",
-      "currentNumber": 16,
-      "rangeStart": 16,
-      "rangeEnd": 18,
+      "currentNumber": 0,
+      "rangeStart": 0,
+      "rangeEnd": 0,
       "isActive": true
     },
     {
@@ -19,9 +19,9 @@
     {
       "id": 3,
       "name": "COUNTER 3",
-      "currentNumber": 19,
-      "rangeStart": 19,
-      "rangeEnd": 21,
+      "currentNumber": 7,
+      "rangeStart": 7,
+      "rangeEnd": 9,
       "isActive": true
     },
     {
@@ -46,15 +46,15 @@
       "id": 7,
       "name": "PRIORITY COUNTER",
       "type": "priority",
-      "currentNumber": 7,
-      "rangeStart": 7,
-      "rangeEnd": 9,
+      "currentNumber": 0,
+      "rangeStart": 0,
+      "rangeEnd": 0,
       "isActive": true
     }
   ],
-  "currentTicket": 21,
+  "currentTicket": 9,
   "lastResetDate": "Tue May 06 2025",
   "rangeSize": 3,
   "priorityRangeSize": 3,
-  "priorityCurrentTicket": 9
+  "priorityCurrentTicket": 0
 }
