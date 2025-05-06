@@ -3,58 +3,58 @@
     {
       "id": 1,
       "name": "COUNTER 1",
-      "currentNumber": 0,
-      "rangeStart": 0,
-      "rangeEnd": 0,
-      "isActive": false
+      "currentNumber": 58,
+      "rangeStart": 58,
+      "rangeEnd": 60,
+      "isActive": true
     },
     {
       "id": 2,
       "name": "COUNTER 2",
-      "currentNumber": 0,
-      "rangeStart": 0,
-      "rangeEnd": 0,
-      "isActive": false
+      "currentNumber": 67,
+      "rangeStart": 67,
+      "rangeEnd": 69,
+      "isActive": true
     },
     {
       "id": 3,
       "name": "COUNTER 3",
-      "currentNumber": 0,
-      "rangeStart": 0,
-      "rangeEnd": 0,
-      "isActive": false
+      "currentNumber": 64,
+      "rangeStart": 64,
+      "rangeEnd": 66,
+      "isActive": true
     },
     {
       "id": 5,
       "name": "COUNTER 4",
       "type": "regular",
-      "currentNumber": 0,
-      "rangeStart": 0,
-      "rangeEnd": 0,
+      "currentNumber": 37,
+      "rangeStart": 37,
+      "rangeEnd": 39,
       "isActive": true
     },
     {
       "id": 6,
       "name": "COUNTER 5",
       "type": "regular",
-      "currentNumber": 1,
-      "rangeStart": 1,
-      "rangeEnd": 3,
+      "currentNumber": 31,
+      "rangeStart": 31,
+      "rangeEnd": 33,
       "isActive": true
     },
     {
       "id": 7,
       "name": "PRIORITY COUNTER",
       "type": "priority",
-      "currentNumber": 0,
-      "rangeStart": 0,
-      "rangeEnd": 0,
+      "currentNumber": 1,
+      "rangeStart": 1,
+      "rangeEnd": 3,
       "isActive": true
     }
   ],
-  "currentTicket": 3,
+  "currentTicket": 69,
   "lastResetDate": "Tue May 06 2025",
   "rangeSize": 3,
   "priorityRangeSize": 3,
-  "priorityCurrentTicket": 0
+  "priorityCurrentTicket": 3
 }

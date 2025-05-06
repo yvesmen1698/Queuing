@@ -6,46 +6,27 @@ import { User2, Volume2, VolumeX } from "lucide-react";
 export default function ViewPage() {
   const [queueData, setQueueData] = useState({ cashiers: [] });
   const [animatingIds, setAnimatingIds] = useState(new Set());
-  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
   const previousNumbersRef = useRef({});
   const audioPoolRef = useRef([]);
   const audioPoolSize = 5;
   const speechSynthRef = useRef(null);
 
-  const initializeAudioAndSpeech = () => {
-    if (!audioPoolRef.current.length) {
-      // Initialize notification sound pool
-      audioPoolRef.current = Array(audioPoolSize)
-        .fill()
-        .map(() => {
-          const audio = new Audio("/notif.mp3");
-          audio.volume = 1;
-          return audio;
-        });
-    }
-
-    if (!speechSynthRef.current && typeof window !== 'undefined' && window.speechSynthesis) {
-      // Initialize speech synthesis
-      speechSynthRef.current = window.speechSynthesis;
-
-      // Load voices
-      const loadVoices = () => {
-        const voices = speechSynthRef.current.getVoices();
-        if (voices.length === 0) {
-          setTimeout(loadVoices, 100);
-        }
-      };
-      loadVoices();
-      speechSynthRef.current.onvoiceschanged = loadVoices;
-    }
-  };
-
-  const handleUserInteraction = () => {
-    initializeAudioAndSpeech();
-    setAudioEnabled(true);
-  };
-
   useEffect(() => {
+    // Initialize speech synthesis
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      speechSynthRef.current = window.speechSynthesis;
+    }
+
+    // Initialize notification sound pool
+    audioPoolRef.current = Array(audioPoolSize)
+      .fill()
+      .map(() => {
+        const audio = new Audio("/notif.mp3");
+        audio.volume = 1;
+        return audio;
+      });
+
     queueData.cashiers.forEach((cashier) => {
       previousNumbersRef.current[cashier.id] = cashier.currentNumber;
     });
@@ -171,11 +152,27 @@ export default function ViewPage() {
     }
   };
 
+  // Load voices when the component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      // Some browsers need a small delay to load voices
+      const loadVoices = () => {
+        const voices = speechSynthRef.current.getVoices();
+        if (voices.length === 0) {
+          // If voices aren't ready yet, try again in a moment
+          setTimeout(loadVoices, 100);
+        }
+      };
+      
+      loadVoices();
+      
+      // Handle voice changes
+      speechSynthRef.current.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
   return (
-    <div
-      className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100"
-      onClick={handleUserInteraction} // Trigger initialization on user interaction
-    >
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="p-4 lg:p-8 h-screen flex flex-col">
         <Card className="flex-1 shadow-xl flex flex-col">
           <CardHeader className="border-b bg-white py-6">
@@ -187,7 +184,22 @@ export default function ViewPage() {
               <p className="text-center text-gray-500 text-2xl mr-4">
                 Counter Updates
               </p>
-        
+              <button
+                onClick={toggleAudio}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition"
+              >
+                {audioEnabled ? (
+                  <>
+                    <Volume2 size={20} />
+                    <span>Sound On</span>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX size={20} />
+                    <span>Sound Off</span>
+                  </>
+                )}
+              </button>
             </div>
           </CardHeader>
           <CardContent className="flex-1 p-8 flex items-center">
@@ -198,7 +210,7 @@ export default function ViewPage() {
                   if (!cashier || !cashier.isActive) {
                     return (
                       <div
-                        key={`inactive-${index}`} // Updated key to include a unique prefix
+                        key={index}
                         className="relative overflow-hidden rounded-xl bg-white border border-gray-100 p-8 shadow-lg transition-all duration-300"
                       >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-red-500 rotate-45 transform translate-x-12 -translate-y-12" />
@@ -222,7 +234,7 @@ export default function ViewPage() {
                   }
                   return (
                     <div
-                      key={cashier.id} // Updated key to use cashier.id for uniqueness
+                      key={cashier.id}
                       className="relative overflow-hidden rounded-xl bg-white border border-gray-100 p-8 shadow-lg transition-all duration-300"
                     >
                       <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 rotate-45 transform translate-x-12 -translate-y-12" />
