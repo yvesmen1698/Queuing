@@ -6,7 +6,7 @@
       "currentNumber": 0,
       "rangeStart": 0,
       "rangeEnd": 0,
-      "isActive": true
+      "isActive": false
     },
     {
       "id": 2,
@@ -14,7 +14,7 @@
       "currentNumber": 0,
       "rangeStart": 0,
       "rangeEnd": 0,
-      "isActive": true
+      "isActive": false
     },
     {
       "id": 3,
@@ -22,7 +22,7 @@
       "currentNumber": 0,
       "rangeStart": 0,
       "rangeEnd": 0,
-      "isActive": true
+      "isActive": false
     },
     {
       "id": 5,
@@ -37,9 +37,9 @@
       "id": 6,
       "name": "COUNTER 5",
       "type": "regular",
-      "currentNumber": 0,
-      "rangeStart": 0,
-      "rangeEnd": 0,
+      "currentNumber": 1,
+      "rangeStart": 1,
+      "rangeEnd": 3,
       "isActive": true
     },
     {
@@ -52,7 +52,7 @@
       "isActive": true
     }
   ],
-  "currentTicket": 0,
+  "currentTicket": 3,
   "lastResetDate": "Tue May 06 2025",
   "rangeSize": 3,
   "priorityRangeSize": 3,
